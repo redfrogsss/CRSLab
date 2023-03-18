@@ -1,0 +1,32 @@
+{'role': 'Recommender', 'context_tokens': [[46], [167, 86, 28, 403], [129, 5, 88, 28, 6, 130, 434, 10], [74, 403, 14, 71, 199, 21, 59, 334, 13, 98, 3724, 645], [43, 142, 19, 23, 28, 6, 47, 21, 10], [160, 40, 15, 7067, 6070], [158, 9, 14, 6, 18, 639, 10], [103, 15, 99, 14, 120, 368, 10]], 'response': [408, 49, 8791, 8, 691, 34, 1266, 24, 2914], 'context_entities': [28208, 5772], 'context_words': [13136, 13848, 23130, 10240, 22920, 2208, 13701, 19188, 6380, 19300, 16687, 14047, 17499, 24725, 8926, 18550, 3437, 13942, 3686, 10674, 12910, 107, 357, 25353, 16811, 11126, 1349, 27900], 'context_items': [28208, 5772], 'items': [22728]}
+
+2023-02-28 21:25:33.577 | INFO     | crslab.system.kgsf:process_input:353 - process_input() data result
+2023-02-28 21:25:33.579 | INFO     | crslab.system.kgsf:process_input:361 - [46]
+2023-02-28 21:25:33.579 | INFO     | crslab.system.kgsf:process_input:362 - ['Hello']
+2023-02-28 21:25:33.582 | INFO     | crslab.system.kgsf:process_input:361 - [167, 86, 28, 403]
+2023-02-28 21:25:33.583 | INFO     | crslab.system.kgsf:process_input:362 - ['hi', 'how', 'are', 'u']
+2023-02-28 21:25:33.584 | INFO     | crslab.system.kgsf:process_input:361 - [129, 5, 88, 28, 6, 130, 434, 10]
+2023-02-28 21:25:33.584 | INFO     | crslab.system.kgsf:process_input:362 - ['Great', '.', 'How', 'are', 'you', 'this', 'morning', '?']
+2023-02-28 21:25:33.584 | INFO     | crslab.system.kgsf:process_input:361 - [74, 403, 14, 71, 199, 21, 59, 334, 13, 98, 3724, 645]
+2023-02-28 21:25:33.585 | INFO     | crslab.system.kgsf:process_input:362 - ['would', 'u', 'have', 'any', 'recommendations', 'for', 'me', 'im', 'good', 'thanks', 'fo', 'asking']
+2023-02-28 21:25:33.586 | INFO     | crslab.system.kgsf:process_input:361 - [43, 142, 19, 23, 28, 6, 47, 21, 10]
+2023-02-28 21:25:33.586 | INFO     | crslab.system.kgsf:process_input:362 - ['What', 'type', 'of', 'movie', 'are', 'you', 'looking', 'for', '?']
+2023-02-28 21:25:33.587 | INFO     | crslab.system.kgsf:process_input:361 - [160, 40, 15, 7067, 6070]
+2023-02-28 21:25:33.588 | INFO     | crslab.system.kgsf:process_input:362 - ['comedies', 'i', 'like', 'kristin', 'wigg']
+2023-02-28 21:25:33.588 | INFO     | crslab.system.kgsf:process_input:361 - [158, 9, 14, 6, 18, 639, 10]
+2023-02-28 21:25:33.589 | INFO     | crslab.system.kgsf:process_input:362 - ['Okay', ',', 'have', 'you', 'seen', '@136983', '?']
+2023-02-28 21:25:33.591 | INFO     | crslab.system.kgsf:process_input:361 - [103, 15, 99, 14, 120, 368, 10]
+2023-02-28 21:25:33.592 | INFO     | crslab.system.kgsf:process_input:362 - ['something', 'like', 'yes', 'have', 'watched', '@140066', '?']
+
+{'role': 'Recommender', 'context_tokens': [[46], [167, 86, 28, 403]], 'response': [129, 5, 88, 28, 6, 130, 434, 10], 'context_entities': [], 'context_words': [13136, 13848, 23130], 'context_items': [], 'items': []}
+
+2023-02-28 21:33:58.548 | INFO     | crslab.system.kgsf:process_input:365 - [46]
+2023-02-28 21:33:58.548 | INFO     | crslab.system.kgsf:process_input:366 - ['Hello']
+2023-02-28 21:33:58.549 | INFO     | crslab.system.kgsf:process_input:365 - [167, 86, 28, 403]
+2023-02-28 21:33:58.549 | INFO     | crslab.system.kgsf:process_input:366 - ['hi', 'how', 'are', 'u']
+
+
+2023-02-28 21:35:19.204 | INFO     | crslab.system.kgsf:process_input:363 - ['Great', '.', 'How', 'are', 'you', 'this', 'morning', '?']
+
+2023-03-02 15:23:06.304 | INFO     | crslab.system.kgsf:process_input:381 - [13136, 13848, 23130]
+2023-03-02 15:23:06.304 | INFO     | crslab.system.kgsf:process_input:383 - ['hi', 'how', 'are']
