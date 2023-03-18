@@ -255,8 +255,8 @@ class KGSFSystem(BaseSystem):
                 rec_loss, info_loss, rec_predict = self.model.forward(rec_input, "rec", "generate")
                 scores = rec_predict.cpu()[0]
                 
-                logger.info("scores")
-                logger.info(scores)
+                # logger.info("scores")
+                # logger.info(scores)
                 
                 k = 100
                 _, rank = torch.topk(scores, k, dim=-1)

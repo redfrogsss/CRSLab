@@ -105,19 +105,45 @@ class KGSFDataLoader(BaseDataLoader):
                 get_onehot(batch_context_entities, self.n_entity),
                 torch.tensor(batch_item, dtype=torch.long))
 
+    # def rec_interact(self, data, stage):
+    #     # pack: context_entities, context_words, entities, movie = batch
+    #     batch_context_entities = []
+    #     batch_context_words = []
+    #     batch_item = []
+        
+    #     for conv_dict in data:
+    #         logger.info("conv_dict")
+    #         logger.info(conv_dict)
+    #         batch_context_entities.append(
+    #             truncate(conv_dict['context_entities'], self.entity_truncate, truncate_tail=False))
+    #         batch_context_words.append(
+    #             truncate(conv_dict['context_words'], self.word_truncate, truncate_tail=False))
+
+    #         # we do not have the key 'item' in the data so we append dummy id or previous recommendation id to prevent crashing.
+    #         if len(conv_dict['interaction_history']) <= 0:
+    #             dummy_itemid = 0
+    #             batch_item.append(dummy_itemid)
+    #         else:
+    #             batch_item.append(conv_dict['interaction_history'][-1])
+                
+    #     return (padded_tensor(batch_context_entities, self.pad_entity_idx, pad_tail=False),
+    #             padded_tensor(batch_context_words,
+    #                           self.pad_word_idx, pad_tail=False),
+    #             get_onehot(batch_context_entities, self.n_entity),
+    #             torch.tensor(batch_item, dtype=torch.long))
+
     def rec_interact(self, data, stage):
         # pack: context_entities, context_words, entities, movie = batch
         batch_context_entities = []
         batch_context_words = []
         batch_item = []
+        entities = []
         
         for conv_dict in data:
-            logger.info("conv_dict")
-            logger.info(conv_dict)
-            batch_context_entities.append(
-                truncate(conv_dict['context_entities'], self.entity_truncate, truncate_tail=False))
-            batch_context_words.append(
-                truncate(conv_dict['context_words'], self.word_truncate, truncate_tail=False))
+            for item in conv_dict['context_entities']:
+                batch_context_entities.append(item)
+            for item in conv_dict['context_words']:
+                batch_context_words.append(item)
 
             # we do not have the key 'item' in the data so we append dummy id or previous recommendation id to prevent crashing.
             if len(conv_dict['interaction_history']) <= 0:
@@ -126,11 +152,18 @@ class KGSFDataLoader(BaseDataLoader):
             else:
                 batch_item.append(conv_dict['interaction_history'][-1])
                 
-        return (padded_tensor(batch_context_entities, self.pad_entity_idx, pad_tail=False),
-                padded_tensor(batch_context_words,
-                              self.pad_word_idx, pad_tail=False),
-                get_onehot(batch_context_entities, self.n_entity),
-                torch.tensor(batch_item, dtype=torch.long))
+            if len(batch_context_entities) <= 0:
+                entities.append(0)
+            else:
+                entities.append(batch_context_entities[-1])
+                
+        return (
+            torch.tensor([batch_context_entities]),
+            torch.tensor([batch_context_words]),
+            torch.tensor([entities]),
+            torch.tensor(batch_item)
+        )
+
 
     def _process_rec_context(self, context_tokens):
         compact_context = []
