@@ -170,9 +170,7 @@ class KGSFDataLoader(BaseDataLoader):
         batch_context_entities = []
         batch_context_words = []
         batch_response = []
-        # logger.info("conv_batchify batch") 
-        # logger.info(batch[0])
-        # exit()
+        
         for conv_dict in batch:
             batch_context_tokens.append(
                 truncate(merge_utt(conv_dict['context_tokens']), self.context_truncate, truncate_tail=False))
@@ -198,21 +196,29 @@ class KGSFDataLoader(BaseDataLoader):
         batch_context_entities = []
         batch_context_words = []
         batch_response = []
+        
         for conv_dict in batch:
-            logger.info("conv_dict")
-            logger.info(conv_dict)
-            batch_context_tokens.append(
-                truncate(merge_utt(conv_dict['context_tokens']), self.context_truncate, truncate_tail=False))
-            batch_context_entities.append(
-                truncate(conv_dict['context_entities'], self.entity_truncate, truncate_tail=False))
-            batch_context_words.append(
-                truncate(conv_dict['context_words'], self.word_truncate, truncate_tail=False))
+            for x in conv_dict['context_tokens']:   # x is a list
+                for y in x:     # y is int
+                    batch_context_tokens.append(y)
+            for item in conv_dict['context_entities']:
+                batch_context_entities.append(item)
+            for item in conv_dict['context_words']:
+                batch_context_words.append(item)
+            for item in conv_dict['context_tokens'][-1]:
+                batch_response.append(item)
+            # batch_context_tokens.append(
+            #     truncate(merge_utt(conv_dict['context_tokens']), self.context_truncate, truncate_tail=False))
+            # batch_context_entities.append(
+            #     truncate(conv_dict['context_entities'], self.entity_truncate, truncate_tail=False))
+            # batch_context_words.append(
+            #     truncate(conv_dict['context_words'], self.word_truncate, truncate_tail=False))
             
             # we do not have the key 'response' in the data so we take the last context tokens sentence as response 
-            batch_response.append(
-                add_start_end_token_idx(truncate(conv_dict['context_tokens'][-1], self.response_truncate - 2),
-                                        start_token_idx=self.start_token_idx,
-                                        end_token_idx=self.end_token_idx))
+            # batch_response.append(
+            #     add_start_end_token_idx(truncate(conv_dict['context_tokens'][-1], self.response_truncate - 2),
+            #                             start_token_idx=self.start_token_idx,
+            #                             end_token_idx=self.end_token_idx))
             
             # batch_response.append(
             #    add_start_end_token_idx(truncate(conv_dict['response'], self.response_truncate - 2),
@@ -225,12 +231,19 @@ class KGSFDataLoader(BaseDataLoader):
             #                             start_token_idx=self.start_token_idx,
             #                             end_token_idx=self.end_token_idx))
 
-        return (padded_tensor(batch_context_tokens, self.pad_token_idx, pad_tail=False),
-                padded_tensor(batch_context_entities,
-                              self.pad_entity_idx, pad_tail=False),
-                padded_tensor(batch_context_words,
-                              self.pad_word_idx, pad_tail=False),
-                padded_tensor(batch_response, self.pad_token_idx))
+        # return (padded_tensor(batch_context_tokens, self.pad_token_idx, pad_tail=False),
+        #         padded_tensor(batch_context_entities,
+        #                       self.pad_entity_idx, pad_tail=False),
+        #         padded_tensor(batch_context_words,
+        #                       self.pad_word_idx, pad_tail=False),
+        #         padded_tensor(batch_response, self.pad_token_idx))
+        
+        return (
+            torch.tensor([batch_context_tokens]),
+            torch.tensor([batch_context_entities]),
+            torch.tensor([batch_context_words]),
+            torch.tensor([batch_response]),
+        )
         
         
     def policy_batchify(self, *args, **kwargs):

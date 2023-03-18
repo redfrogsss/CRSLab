@@ -250,7 +250,6 @@ class KGSFSystem(BaseSystem):
                 logger.info("rec_input")
                 logger.info(rec_input)
                 
-                exit()
                 
                 logger.info("Generating Recommending Items...")
                 rec_loss, info_loss, rec_predict = self.model.forward(rec_input, "rec", "generate")
@@ -301,11 +300,12 @@ class KGSFSystem(BaseSystem):
                 logger.info(conv_input)
                 
                 logger.info("Generating Conversation...")
-                gen_loss, pred = self.model.forward(conv_input, 'conv', 'generate')
-                prediction = pred.tolist()
+                # loss, pred = self.model.forward(conv_input, 'conv', 'generate')[0]
+                pred = self.model.forward(conv_input, 'conv', 'test')[0]
+                # prediction = pred.tolist()
                 
-                logger.info(prediction)
-                conv_result = ind2txt(prediction[0], self.ind2tok, self.end_token_idx)
+                # logger.info(prediction)
+                conv_result = ind2txt(pred, self.ind2tok, self.end_token_idx)
                 
                 logger.info("conv_result")
                 logger.info(conv_result)
@@ -313,6 +313,8 @@ class KGSFSystem(BaseSystem):
                 conv_result = self.response_postprocessing(conv_result)
                 logger.info("conv_result postprocessed")
                 logger.info(conv_result)
+                
+                # exit()
                 
                 self.send_response_to_frontend(conv_result, True, res_type="recommend")
                 
