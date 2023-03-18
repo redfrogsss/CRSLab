@@ -476,7 +476,7 @@ class KGSFSystem(BaseSystem):
     def response_postprocessing(self, response):
         # input: __start__ I have not forward something reason to @123456  
         # expected output: [Response] I have not forward something reason to this
-        response = response.replace("__start__", "[Response] ")
+        response = response.replace("__start__ __start__", "[Response] ")
         
         response = re.sub(r'@\d+', "this", response)    # replace @123456 in the response
         
