@@ -157,6 +157,17 @@ class KGSFDataLoader(BaseDataLoader):
             else:
                 entities.append(batch_context_entities[-1])
                 
+        # if batch array is empty, append 0
+        if len(batch_context_entities) <= 0:
+            batch_context_entities.append(0)
+        if len(batch_context_words) <= 0:
+            batch_context_words.append(0)
+        if len(batch_item) <= 0:
+            batch_item.append(0)
+        if len(entities) <= 0:
+            entities.append(0)
+            
+                
         return (
             torch.tensor([batch_context_entities]),
             torch.tensor([batch_context_words]),
@@ -270,6 +281,19 @@ class KGSFDataLoader(BaseDataLoader):
         #         padded_tensor(batch_context_words,
         #                       self.pad_word_idx, pad_tail=False),
         #         padded_tensor(batch_response, self.pad_token_idx))
+        
+        # if batch array is empty, append 0
+        if len(batch_response) <= 0:
+            batch_response.append(0)
+        if len(batch_context_tokens) <= 0:
+            batch_context_tokens.append(0)
+        if len(batch_context_entities) <= 0:
+            batch_context_entities.append(0)
+        if len(batch_context_words) <= 0:
+            batch_context_words.append(0)
+            
+        # logger.info('batch_context_entities')
+        # logger.info(batch_context_entities)
         
         return (
             torch.tensor([batch_context_tokens]),
