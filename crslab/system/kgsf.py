@@ -8,6 +8,7 @@
 # @Email  : francis_kun_zhou@163.com, wxl1999@foxmail.com
 
 import os
+import requests
 
 import torch
 from loguru import logger
@@ -244,11 +245,11 @@ class KGSFSystem(BaseSystem):
         logger.info('[Interact]')
         self.init_interact()
         
-        input_text = self.get_input(self.language)
+        input_text, chat_id = self.get_input(self.language)
         while not self.finished:
             # rec
             if hasattr(self, 'model'):
-                rec_input = self.process_input(input_text, 'rec')
+                rec_input = self.process_input(input_text, 'rec', chat_id)
                 
                 logger.info("rec_input")
                 logger.info(rec_input)
@@ -296,11 +297,12 @@ class KGSFSystem(BaseSystem):
                 rec_name = rec_name.removeprefix("[Recommend] ")
                 self.send_movie_poster(rec_name)
                 
-                self.update_context(stage='rec', item_ids=[rec_id], entity_ids=[rec_id])
+                # self.update_context(stage='rec', item_ids=[rec_id], entity_ids=[rec_id])
+                self.update_context(stage='rec', chat_id=chat_id, item_ids=[rec_id], entity_ids=[rec_id], model="kgsf")
                 
                 logger.info("End of rec")
                 
-                conv_input = self.process_input(input_text, 'conv')
+                conv_input = self.process_input(input_text, 'conv', chat_id)
                 
                 logger.info("conv_input")
                 logger.info(conv_input)
@@ -328,16 +330,18 @@ class KGSFSystem(BaseSystem):
                 
                 logger.info("Updating context...")
                 token_ids, entity_ids, movie_ids, word_ids = self.convert_to_id(conv_result, "conv")
-                self.update_context(stage="conv", word_ids=word_ids, token_ids=token_ids)
+                # self.update_context(stage="conv", word_ids=word_ids, token_ids=token_ids)
+                self.update_context(stage='conv', chat_id=chat_id, word_ids=word_ids, token_ids=token_ids, model="kgsf")
                 
             else:
                 logger.info("no attr 'rec_model' or 'model'")
 
-            input_text = self.get_input(self.language)
-
-    def process_input(self, input_text, stage):
+            input_text, chat_id = self.get_input(self.language)
+            
+    def process_input(self, input_text, stage, chat_id=None):
+        self.get_context_data("kgsf", stage, chat_id)
         token_ids, entity_ids, movie_ids, word_ids = self.convert_to_id(input_text, stage)
-        self.update_context(stage, token_ids, entity_ids, movie_ids, word_ids)
+        self.update_context(stage, chat_id, token_ids, entity_ids, movie_ids, word_ids, "kgsf")
 
         data = [{'role': 'Seeker',
                  'context_tokens': self.context[stage]['context_tokens'],
@@ -373,8 +377,9 @@ class KGSFSystem(BaseSystem):
         logger.info("process_input() data result")
         self.vocab["id2word"] = {v: k for k, v in self.vocab["word2id"].items()}    # create vocab to convert id to word
         
-        logger.info("self.context[stage]['context_tokens']")
-        logger.info([self.vocab["ind2tok"][i] for i in self.context[stage]['context_tokens'][-1]])
+        if len(self.context[stage]['context_tokens']) > 0:
+            logger.info("self.context[stage]['context_tokens']")
+            logger.info([self.vocab["ind2tok"][i] for i in self.context[stage]['context_tokens'][-1]])
         
         if(stage == "rec"):
             logger.info(data[1].tolist()[0])
@@ -489,56 +494,59 @@ class KGSFSystem(BaseSystem):
         return response 
     
     def send_movie_poster(self, keywords):
-        import requests
-        
-        # Google Image Search
-        apikey = "AIzaSyBtJA-wewA7hMba95yOEYEpBlv-s5bVE8I"
+        try:
+            # Google Image Search
+            apikey = "AIzaSyBtJA-wewA7hMba95yOEYEpBlv-s5bVE8I"
 
-        keywords = "movie poster " + keywords
-        keywords = keywords.replace(" ", "+")
-        logger.info("searching movie poster for " + keywords + "...")
-        url = "https://www.googleapis.com/customsearch/v1?key=" + \
-            apikey + "&cx=45af08e498f7c4291&searchType=image&q=" + keywords
+            keywords = "movie poster " + keywords
+            keywords = keywords.replace(" ", "+")
+            logger.info("searching movie poster for " + keywords + "...")
+            url = "https://www.googleapis.com/customsearch/v1?key=" + \
+                apikey + "&cx=45af08e498f7c4291&searchType=image&q=" + keywords
 
-        res = requests.get(url).json()
-        # logger.info(res)
-        poster_link = res["items"][0]["link"]
-        
-        # Get chat_id and user_id
-        response = requests.get(self.getBackendUrl() + "/input_queue")
-        data = response.json()
-        chat_id = str(data["result"]["chat_id"])
-        user_id = str(data["result"]["user_id"])
-
-        # Send Image to API
-
-        # Read the image file to be sent in binary mode and store it in a variable
-        with urllib.request.urlopen(poster_link) as response:
-            image_data = response.read()
+            res = requests.get(url).json()
+            logger.info("res")
+            logger.info(res)
+            poster_link = res["items"][0]["link"]
             
-        # Determine the file type of the image
-        img = Image.open(io.BytesIO(image_data))
-        file_type = img.format.lower()
-        logger.info("file_type: " + file_type);
+            # Get chat_id and user_id
+            response = requests.get(self.getBackendUrl() + "/input_queue")
+            data = response.json()
+            chat_id = str(data["result"]["chat_id"])
+            user_id = str(data["result"]["user_id"])
 
-        # Define the endpoint URL where the POST request will be sent
-        url = self.getBackendUrl() + "/movie_poster?chat_id=" + chat_id + "&user_id=" + user_id
+            # Send Image to API
 
-        # Set the request headers
-        headers = {'Content-Type': 'image/png', 'Content-Disposition': 'attachment; filename="poster.png"'}
+            # Read the image file to be sent in binary mode and store it in a variable
+            with urllib.request.urlopen(poster_link) as response:
+                image_data = response.read()
+                
+            # Determine the file type of the image
+            img = Image.open(io.BytesIO(image_data))
+            file_type = img.format.lower()
+            logger.info("file_type: " + file_type);
 
-        # Set the data payload of the request
-        data = image_data
+            # Define the endpoint URL where the POST request will be sent
+            url = self.getBackendUrl() + "/movie_poster?chat_id=" + chat_id + "&user_id=" + user_id
 
-        # Make the POST request
-        response = requests.post(url, headers=headers, data=data)
+            # Set the request headers
+            headers = {'Content-Type': 'image/png', 'Content-Disposition': 'attachment; filename="poster.png"'}
 
-        # Check the response and handle the data appropriately
-        if response.status_code == 200:
-            logger.info('Image uploaded successfully!')
-            # Handle the response data here
-        else:
-            logger.info('Image upload failed. Error code:')
-            logger.info(response.status_code)
-            logger.info(response)
-            # exit()
+            # Set the data payload of the request
+            data = image_data
+
+            # Make the POST request
+            response = requests.post(url, headers=headers, data=data)
+
+            # Check the response and handle the data appropriately
+            if response.status_code == 200:
+                logger.info('Image uploaded successfully!')
+                # Handle the response data here
+            else:
+                logger.info('Image upload failed. Error code:')
+                logger.info(response.status_code)
+                logger.info(response)
+                # exit()
+        except Exception as e:
+            logger.info("Error sending movie poster")
+            logger.info(e)

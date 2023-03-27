@@ -12,6 +12,7 @@
 # @Author : Zhipeng Zhao
 # @Email  : oran_official@outlook.com
 
+import json
 import os
 from abc import ABC, abstractmethod
 import numpy as np
@@ -315,8 +316,44 @@ class BaseSystem(ABC):
             self.context[key]['interaction_history'] = []
             self.context[key]['entity_set'] = set()
             self.context[key]['word_set'] = set()
+            
+    def send_context_to_backend(self, chat_id, model, stage, context):
+        
+        context_data = {
+            "chat_id": chat_id,
+            "model": model,
+            "stage": stage,
+            "context_tokens": json.dumps(context["context_tokens"]),
+            "context_entities": json.dumps(context["context_entities"]),
+            "context_words": json.dumps(context["context_words"]),
+            "context_items": json.dumps(context["context_items"]),
+            "user_profile": json.dumps(context["user_profile"]),
+            "interaction_history": json.dumps(context["interaction_history"]),
+        }
+        
+        # if backend has no context, create a new one
+        response = requests.get(self.getBackendUrl() + "/context?chat_id=" + chat_id + "&model=" + model + "&stage=" + stage)
+        data = response.json()
+        if data["result"] == "None":
+            logger.info("send_context_to_backned(): no context found. Creating new one.")
+            response = requests.post(self.getBackendUrl() + "/context", context_data)
+            logger.info(response.json())
+        else:
+            logger.info("send_context_to_backned(): context updated.")
+            response = requests.put(self.getBackendUrl() + "/context", context_data)
+            logger.info(response.json())
+    
+    def get_context_from_backend(self, chat_id, model, stage):
+        response = requests.get(self.getBackendUrl() + "/context?chat_id=" + chat_id + "&model=" + model + "&stage=" + stage)
+        data = response.json()
+        context = data["result"]
+        return context
 
-    def update_context(self, stage, token_ids=None, entity_ids=None, item_ids=None, word_ids=None):
+    def update_context(self, stage, chat_id=None, token_ids=None, entity_ids=None, item_ids=None, word_ids=None, model="kgsf"):
+        if chat_id is None:
+            logger.info("update_context(): chat_id is None")
+            return None
+        
         if token_ids is not None:
             self.context[stage]['context_tokens'].append(token_ids)
         if item_ids is not None:
@@ -331,7 +368,10 @@ class BaseSystem(ABC):
                  if word_id not in self.context[stage]['word_set']:
                      self.context[stage]['word_set'].add(word_id)
                      self.context[stage]['context_words'].append(word_id)
-
+        
+        # send context to backend
+        self.send_context_to_backend(chat_id, model, stage, self.context[stage])
+        
     def get_input(self, language):
         logger.info(f"Waiting for new {language} message...")
 
@@ -349,11 +389,11 @@ class BaseSystem(ABC):
             raise
         # text = input(f"Enter Your Message in {language}: ")
 
-        text = self.get_input_from_frontend(language)
+        text, chat_id = self.get_input_from_frontend(language)
 
         if '[EXIT]' in text:
             self.finished = True
-        return text
+        return text, chat_id
 
     def tokenize(self, text, tokenizer, path=None):
         tokenize_fun = getattr(self, tokenizer + '_tokenize')
@@ -457,13 +497,16 @@ class BaseSystem(ABC):
             time.sleep(1)
 
         message = str(data["result"]["message"])
+        chat_id = str(data["result"]["chat_id"])
         
         logger.info("message")
         logger.info(message)
+        logger.info("chat_id")
+        logger.info(chat_id)
         
         res_language = str(data["result"]["language"])
         
-        return message
+        return message, chat_id
         
     def getBackendUrl(self):
         return "http://192.168.0.37:3001/api"
@@ -491,3 +534,37 @@ class BaseSystem(ABC):
 
         if done == True:
             requests.put(self.getBackendUrl() + "/input_queue")
+
+    def get_context_data(self, model, stage, chat_id=None):
+        
+        logger.info("get_context_data()")
+        
+        if chat_id is None:
+            logger.info("chat_id is None")
+            return
+        
+        self.context[stage]['context_tokens'] = []
+        self.context[stage]['context_entities'] = []
+        self.context[stage]['context_words'] = []
+        self.context[stage]['context_items'] = []
+        self.context[stage]['user_profile'] = []
+        self.context[stage]['interaction_history'] = []
+        # self.context[stage]['entity_set'] = set()
+        # self.context[stage]['word_set'] = set()
+        
+        # get input from backend then assign value to self.context[stage]
+        context_data = self.get_context_from_backend(chat_id, model, stage)
+        
+        if context_data is None or context_data == "None":
+            logger.info("context_data is None")
+            return
+        
+        # logger.info(json.loads(context_data['context_entities']))
+        # logger.info(type(json.loads(context_data['context_entities'])))
+        
+        self.context[stage]['context_entities'] = json.loads(context_data['context_entities'])
+        self.context[stage]['context_items'] = json.loads(context_data['context_items'])
+        self.context[stage]['context_tokens'] = json.loads(context_data['context_tokens'])
+        self.context[stage]['context_words'] = json.loads(context_data['context_words'])
+        self.context[stage]['interaction_history'] = json.loads(context_data['interaction_history'])
+        self.context[stage]['user_profile'] = json.loads(context_data['user_profile'])
