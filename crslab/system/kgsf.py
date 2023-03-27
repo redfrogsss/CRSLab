@@ -8,6 +8,7 @@
 # @Email  : francis_kun_zhou@163.com, wxl1999@foxmail.com
 
 import os
+import requests
 
 import torch
 from loguru import logger
@@ -493,56 +494,58 @@ class KGSFSystem(BaseSystem):
         return response 
     
     def send_movie_poster(self, keywords):
-        import requests
-        
-        # Google Image Search
-        apikey = "AIzaSyBtJA-wewA7hMba95yOEYEpBlv-s5bVE8I"
+        try:
+            # Google Image Search
+            apikey = "AIzaSyBtJA-wewA7hMba95yOEYEpBlv-s5bVE8I"
 
-        keywords = "movie poster " + keywords
-        keywords = keywords.replace(" ", "+")
-        logger.info("searching movie poster for " + keywords + "...")
-        url = "https://www.googleapis.com/customsearch/v1?key=" + \
-            apikey + "&cx=45af08e498f7c4291&searchType=image&q=" + keywords
+            keywords = "movie poster " + keywords
+            keywords = keywords.replace(" ", "+")
+            logger.info("searching movie poster for " + keywords + "...")
+            url = "https://www.googleapis.com/customsearch/v1?key=" + \
+                apikey + "&cx=45af08e498f7c4291&searchType=image&q=" + keywords
 
-        res = requests.get(url).json()
-        # logger.info(res)
-        poster_link = res["items"][0]["link"]
-        
-        # Get chat_id and user_id
-        response = requests.get(self.getBackendUrl() + "/input_queue")
-        data = response.json()
-        chat_id = str(data["result"]["chat_id"])
-        user_id = str(data["result"]["user_id"])
-
-        # Send Image to API
-
-        # Read the image file to be sent in binary mode and store it in a variable
-        with urllib.request.urlopen(poster_link) as response:
-            image_data = response.read()
+            res = requests.get(url).json()
+            # logger.info(res)
+            poster_link = res["items"][0]["link"]
             
-        # Determine the file type of the image
-        img = Image.open(io.BytesIO(image_data))
-        file_type = img.format.lower()
-        logger.info("file_type: " + file_type);
+            # Get chat_id and user_id
+            response = requests.get(self.getBackendUrl() + "/input_queue")
+            data = response.json()
+            chat_id = str(data["result"]["chat_id"])
+            user_id = str(data["result"]["user_id"])
 
-        # Define the endpoint URL where the POST request will be sent
-        url = self.getBackendUrl() + "/movie_poster?chat_id=" + chat_id + "&user_id=" + user_id
+            # Send Image to API
 
-        # Set the request headers
-        headers = {'Content-Type': 'image/png', 'Content-Disposition': 'attachment; filename="poster.png"'}
+            # Read the image file to be sent in binary mode and store it in a variable
+            with urllib.request.urlopen(poster_link) as response:
+                image_data = response.read()
+                
+            # Determine the file type of the image
+            img = Image.open(io.BytesIO(image_data))
+            file_type = img.format.lower()
+            logger.info("file_type: " + file_type);
 
-        # Set the data payload of the request
-        data = image_data
+            # Define the endpoint URL where the POST request will be sent
+            url = self.getBackendUrl() + "/movie_poster?chat_id=" + chat_id + "&user_id=" + user_id
 
-        # Make the POST request
-        response = requests.post(url, headers=headers, data=data)
+            # Set the request headers
+            headers = {'Content-Type': 'image/png', 'Content-Disposition': 'attachment; filename="poster.png"'}
 
-        # Check the response and handle the data appropriately
-        if response.status_code == 200:
-            logger.info('Image uploaded successfully!')
-            # Handle the response data here
-        else:
-            logger.info('Image upload failed. Error code:')
-            logger.info(response.status_code)
-            logger.info(response)
-            # exit()
+            # Set the data payload of the request
+            data = image_data
+
+            # Make the POST request
+            response = requests.post(url, headers=headers, data=data)
+
+            # Check the response and handle the data appropriately
+            if response.status_code == 200:
+                logger.info('Image uploaded successfully!')
+                # Handle the response data here
+            else:
+                logger.info('Image upload failed. Error code:')
+                logger.info(response.status_code)
+                logger.info(response)
+                # exit()
+        except Exception as e:
+            logger.info("Error sending movie poster")
+            logger.info(e)
