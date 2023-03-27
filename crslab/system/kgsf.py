@@ -244,11 +244,11 @@ class KGSFSystem(BaseSystem):
         logger.info('[Interact]')
         self.init_interact()
         
-        input_text = self.get_input(self.language)
+        input_text, chat_id = self.get_input(self.language)
         while not self.finished:
             # rec
             if hasattr(self, 'model'):
-                rec_input = self.process_input(input_text, 'rec')
+                rec_input = self.process_input(input_text, 'rec', chat_id)
                 
                 logger.info("rec_input")
                 logger.info(rec_input)
@@ -296,11 +296,12 @@ class KGSFSystem(BaseSystem):
                 rec_name = rec_name.removeprefix("[Recommend] ")
                 self.send_movie_poster(rec_name)
                 
-                self.update_context(stage='rec', item_ids=[rec_id], entity_ids=[rec_id])
+                # self.update_context(stage='rec', item_ids=[rec_id], entity_ids=[rec_id])
+                self.update_context(stage='rec', chat_id=chat_id, item_ids=[rec_id], entity_ids=[rec_id], model="kgsf")
                 
                 logger.info("End of rec")
                 
-                conv_input = self.process_input(input_text, 'conv')
+                conv_input = self.process_input(input_text, 'conv', chat_id)
                 
                 logger.info("conv_input")
                 logger.info(conv_input)
@@ -328,16 +329,17 @@ class KGSFSystem(BaseSystem):
                 
                 logger.info("Updating context...")
                 token_ids, entity_ids, movie_ids, word_ids = self.convert_to_id(conv_result, "conv")
-                self.update_context(stage="conv", word_ids=word_ids, token_ids=token_ids)
+                # self.update_context(stage="conv", word_ids=word_ids, token_ids=token_ids)
+                self.update_context(stage='conv', chat_id=chat_id, word_ids=word_ids, token_ids=token_ids, model="kgsf")
                 
             else:
                 logger.info("no attr 'rec_model' or 'model'")
 
-            input_text = self.get_input(self.language)
+            input_text, chat_id = self.get_input(self.language)
 
-    def process_input(self, input_text, stage):
+    def process_input(self, input_text, stage, chat_id=None):
         token_ids, entity_ids, movie_ids, word_ids = self.convert_to_id(input_text, stage)
-        self.update_context(stage, token_ids, entity_ids, movie_ids, word_ids)
+        self.update_context(stage, chat_id, token_ids, entity_ids, movie_ids, word_ids, "kgsf")
 
         data = [{'role': 'Seeker',
                  'context_tokens': self.context[stage]['context_tokens'],
@@ -373,8 +375,9 @@ class KGSFSystem(BaseSystem):
         logger.info("process_input() data result")
         self.vocab["id2word"] = {v: k for k, v in self.vocab["word2id"].items()}    # create vocab to convert id to word
         
-        logger.info("self.context[stage]['context_tokens']")
-        logger.info([self.vocab["ind2tok"][i] for i in self.context[stage]['context_tokens'][-1]])
+        if len(self.context[stage]['context_tokens']) > 0:
+            logger.info("self.context[stage]['context_tokens']")
+            logger.info([self.vocab["ind2tok"][i] for i in self.context[stage]['context_tokens'][-1]])
         
         if(stage == "rec"):
             logger.info(data[1].tolist()[0])

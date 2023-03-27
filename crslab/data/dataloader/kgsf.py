@@ -249,8 +249,12 @@ class KGSFDataLoader(BaseDataLoader):
                 batch_context_entities.append(item)
             for item in conv_dict['context_words']:
                 batch_context_words.append(item)
-            for item in conv_dict['context_tokens'][-1]:
-                batch_response.append(item)
+            if(len(conv_dict['context_tokens']) > 0):
+                for item in conv_dict['context_tokens'][-1]:
+                    batch_response.append(item)
+            else:
+                batch_response.append(0)
+                
             # batch_context_tokens.append(
             #     truncate(merge_utt(conv_dict['context_tokens']), self.context_truncate, truncate_tail=False))
             # batch_context_entities.append(
