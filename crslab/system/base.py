@@ -343,8 +343,8 @@ class BaseSystem(ABC):
             response = requests.put(self.getBackendUrl() + "/context", context_data)
             logger.info(response.json())
     
-    def get_context_from_backend(self):
-        response = requests.get(self.getBackendUrl() + "/context")
+    def get_context_from_backend(self, chat_id, model, stage):
+        response = requests.get(self.getBackendUrl() + "/context?chat_id=" + chat_id + "&model=" + model + "&stage=" + stage)
         data = response.json()
         context = data["result"]
         return context
@@ -534,3 +534,37 @@ class BaseSystem(ABC):
 
         if done == True:
             requests.put(self.getBackendUrl() + "/input_queue")
+
+    def get_context_data(self, model, stage, chat_id=None):
+        
+        logger.info("get_context_data()")
+        
+        if chat_id is None:
+            logger.info("chat_id is None")
+            return
+        
+        self.context[stage]['context_tokens'] = []
+        self.context[stage]['context_entities'] = []
+        self.context[stage]['context_words'] = []
+        self.context[stage]['context_items'] = []
+        self.context[stage]['user_profile'] = []
+        self.context[stage]['interaction_history'] = []
+        # self.context[stage]['entity_set'] = set()
+        # self.context[stage]['word_set'] = set()
+        
+        # get input from backend then assign value to self.context[stage]
+        context_data = self.get_context_from_backend(chat_id, model, stage)
+        
+        if context_data is None or context_data == "None":
+            logger.info("context_data is None")
+            return
+        
+        # logger.info(json.loads(context_data['context_entities']))
+        # logger.info(type(json.loads(context_data['context_entities'])))
+        
+        self.context[stage]['context_entities'] = json.loads(context_data['context_entities'])
+        self.context[stage]['context_items'] = json.loads(context_data['context_items'])
+        self.context[stage]['context_tokens'] = json.loads(context_data['context_tokens'])
+        self.context[stage]['context_words'] = json.loads(context_data['context_words'])
+        self.context[stage]['interaction_history'] = json.loads(context_data['interaction_history'])
+        self.context[stage]['user_profile'] = json.loads(context_data['user_profile'])

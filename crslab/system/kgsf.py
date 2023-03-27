@@ -336,8 +336,9 @@ class KGSFSystem(BaseSystem):
                 logger.info("no attr 'rec_model' or 'model'")
 
             input_text, chat_id = self.get_input(self.language)
-
+            
     def process_input(self, input_text, stage, chat_id=None):
+        self.get_context_data("kgsf", stage, chat_id)
         token_ids, entity_ids, movie_ids, word_ids = self.convert_to_id(input_text, stage)
         self.update_context(stage, chat_id, token_ids, entity_ids, movie_ids, word_ids, "kgsf")
 
