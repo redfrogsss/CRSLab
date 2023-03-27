@@ -505,7 +505,8 @@ class KGSFSystem(BaseSystem):
                 apikey + "&cx=45af08e498f7c4291&searchType=image&q=" + keywords
 
             res = requests.get(url).json()
-            # logger.info(res)
+            logger.info("res")
+            logger.info(res)
             poster_link = res["items"][0]["link"]
             
             # Get chat_id and user_id
