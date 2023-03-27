@@ -8,6 +8,7 @@
 # @Email  : wxl1999@foxmail.com
 
 import os
+import requests
 
 import torch
 from loguru import logger
@@ -20,6 +21,9 @@ from crslab.evaluator.metrics.gen import PPLMetric
 from crslab.system.base import BaseSystem
 from crslab.system.utils.functions import ind2txt
 
+import urllib.request
+from PIL import Image
+import io
 
 class TGReDialSystem(BaseSystem):
     """This is the system for TGReDial model"""
@@ -297,12 +301,12 @@ class TGReDialSystem(BaseSystem):
 
     def interact(self):
         self.init_interact()
-        input_text = self.get_input(self.language)
+        input_text, chat_id = self.get_input(self.language)
         while not self.finished:
             # rec
             if hasattr(self, 'rec_model'):
                 logger.info("Processing Input")
-                rec_input = self.process_input(input_text, 'rec')
+                rec_input = self.process_input(input_text, 'rec', chat_id)
 
                 logger.info("Getting Recommendation")
                 scores = self.rec_model.forward(rec_input, 'infer')
@@ -317,7 +321,7 @@ class TGReDialSystem(BaseSystem):
                 first_item_id = item_ids[:1]
 
                 logger.info("Updating user preference")
-                self.update_context('rec', entity_ids=first_item_id, item_ids=first_item_id)
+                self.update_context('rec', chat_id, entity_ids=first_item_id, item_ids=first_item_id, model="tgredial")
 
                 recommend_text = ""
                 for item_id in item_ids:
@@ -327,13 +331,14 @@ class TGReDialSystem(BaseSystem):
                 logger.info(recommend_text)
                 self.send_response_to_frontend("[Recommend]:\n" + recommend_text, False)
 
-                poster = self.get_movie_poster_url(recommend_text)
-                self.send_response_to_frontend(poster, False, res_type="image")
+                # poster = self.get_movie_poster_url(recommend_text)
+                # self.send_response_to_frontend(poster, False, res_type="image")
+                self.send_movie_poster(recommend_text)
 
             # conv
             if hasattr(self, 'conv_model'):
                 logger.info("Processing Input")
-                conv_input = self.process_input(input_text, 'conv')
+                conv_input = self.process_input(input_text, 'conv', chat_id)
                 logger.info("Getting prediction from models")
                 preds = self.conv_model.forward(
                     conv_input, 'infer').tolist()[0]
@@ -350,14 +355,15 @@ class TGReDialSystem(BaseSystem):
 
                 logger.info("Updating user preference")
                 token_ids, entity_ids, movie_ids, word_ids = self.convert_to_id(p_str, 'conv')
-                self.update_context('conv', token_ids, entity_ids, movie_ids, word_ids)
+                self.update_context('conv', chat_id, token_ids, entity_ids, movie_ids, word_ids, model="tgredial")
             # input
-            input_text = self.get_input(self.language)
+            input_text, chat_id = self.get_input(self.language)
 
-    def process_input(self, input_text, stage):
+    def process_input(self, input_text, stage, chat_id=None):
+        self.get_context_data("tgredial", stage, chat_id)
         token_ids, entity_ids, movie_ids, word_ids = self.convert_to_id(
             input_text, stage)
-        self.update_context(stage, token_ids, entity_ids, movie_ids, word_ids)
+        self.update_context(stage, chat_id, token_ids, entity_ids, movie_ids, word_ids, "tgredial")
 
         data = {'role': 'Seeker', 'context_tokens': self.context[stage]['context_tokens'],
                 'context_entities': self.context[stage]['context_entities'],
@@ -451,3 +457,62 @@ class TGReDialSystem(BaseSystem):
        res = requests.get(url).json()
        poster = res["items"][0]["link"]
        return poster
+   
+   
+    def send_movie_poster(self, keywords):
+        try:
+            # Google Image Search
+            apikey = "AIzaSyBtJA-wewA7hMba95yOEYEpBlv-s5bVE8I"
+
+            keywords = "电影海报 " + keywords
+            keywords = keywords.replace(" ", "+")
+            logger.info("searching movie poster for " + keywords + "...")
+            url = "https://www.googleapis.com/customsearch/v1?key=" + \
+                apikey + "&cx=45af08e498f7c4291&searchType=image&q=" + keywords
+
+            res = requests.get(url).json()
+            logger.info("res")
+            logger.info(res)
+            poster_link = res["items"][0]["link"]
+            
+            # Get chat_id and user_id
+            response = requests.get(self.getBackendUrl() + "/input_queue")
+            data = response.json()
+            chat_id = str(data["result"]["chat_id"])
+            user_id = str(data["result"]["user_id"])
+
+            # Send Image to API
+
+            # Read the image file to be sent in binary mode and store it in a variable
+            with urllib.request.urlopen(poster_link) as response:
+                image_data = response.read()
+                
+            # Determine the file type of the image
+            img = Image.open(io.BytesIO(image_data))
+            file_type = img.format.lower()
+            logger.info("file_type: " + file_type);
+
+            # Define the endpoint URL where the POST request will be sent
+            url = self.getBackendUrl() + "/movie_poster?chat_id=" + chat_id + "&user_id=" + user_id
+
+            # Set the request headers
+            headers = {'Content-Type': 'image/png', 'Content-Disposition': 'attachment; filename="poster.png"'}
+
+            # Set the data payload of the request
+            data = image_data
+
+            # Make the POST request
+            response = requests.post(url, headers=headers, data=data)
+
+            # Check the response and handle the data appropriately
+            if response.status_code == 200:
+                logger.info('Image uploaded successfully!')
+                # Handle the response data here
+            else:
+                logger.info('Image upload failed. Error code:')
+                logger.info(response.status_code)
+                logger.info(response)
+                # exit()
+        except Exception as e:
+            logger.info("Error sending movie poster")
+            logger.info(e)

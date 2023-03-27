@@ -352,7 +352,7 @@ class BaseSystem(ABC):
     def update_context(self, stage, chat_id=None, token_ids=None, entity_ids=None, item_ids=None, word_ids=None, model="kgsf"):
         if chat_id is None:
             logger.info("update_context(): chat_id is None")
-            return None
+            # return None
         
         if token_ids is not None:
             self.context[stage]['context_tokens'].append(token_ids)
@@ -370,6 +370,9 @@ class BaseSystem(ABC):
                      self.context[stage]['context_words'].append(word_id)
         
         # send context to backend
+        logger.info(chat_id)
+        logger.info(model)
+        logger.info(self.context[stage])
         self.send_context_to_backend(chat_id, model, stage, self.context[stage])
         
     def get_input(self, language):
