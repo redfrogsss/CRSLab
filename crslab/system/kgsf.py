@@ -383,8 +383,9 @@ class KGSFSystem(BaseSystem):
         
         if(stage == "rec"):
             logger.info(data[1].tolist()[0])
-            logger.info("data[1]--context_words")
-            logger.info([self.vocab["id2word"][i] for i in data[1].tolist()[0]])
+            if (data[1].tolist()[0] != [0]):    # avoid `KeyError: 0` on id2word
+                logger.info("data[1]--context_words")
+                logger.info([self.vocab["id2word"][i] for i in data[1].tolist()[0]])
             
         if stage == "conv":
             logger.info("data")
