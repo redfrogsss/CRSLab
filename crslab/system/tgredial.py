@@ -329,7 +329,8 @@ class TGReDialSystem(BaseSystem):
                         item_name = self.id2entity[item_id]
                         recommend_text += item_name + "\n"
                 logger.info(recommend_text)
-                self.send_response_to_frontend("[Recommend]:\n" + recommend_text, False)
+                # self.send_response_to_frontend("[Recommend]:\n" + recommend_text, False)
+                self.send_response_to_frontend("[推荐]:\n" + recommend_text, False)
 
                 # poster = self.get_movie_poster_url(recommend_text)
                 # self.send_response_to_frontend(poster, False, res_type="image")
@@ -345,7 +346,8 @@ class TGReDialSystem(BaseSystem):
                 logger.info("Getting Response Text from ind2txt")
                 p_str = ind2txt(preds, self.ind2tok, self.end_token_idx)
 
-                response_text = (f"[Response]:\n{p_str}")
+                # response_text = (f"[Response]:\n{p_str}")
+                response_text = (f"[回复]:\n{p_str}")
 
                 # print(response_text)
                 logger.info(response_text)
